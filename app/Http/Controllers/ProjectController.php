@@ -1,74 +1,66 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Policies;
 
-use app\Models\Project;
-use Illuminate\Http\Request;
+use App\Models\Project;
+use App\Models\User;
+use Illuminate\Auth\Access\Response;
 
-class ProjectController extends Controller
+class ProjectPolicy
 {
-    public function index()
+    /**
+     * Determine whether the user can view any models.
+     */
+    public function viewAny(User $user): bool
     {
-        $userId = auth()->id();
-
-        $projects = Project::where('owner_id', $userId)
-            ->orWhereHas('members', fn($q) => $q->where('user_id', $userId))
-            ->latest()
-            ->get();
-
-        return view('projects.index', compact('projects'));
+        return false;
     }
 
-    public function create()
+    /**
+     * Determine whether the user can view the model.
+     */
+    public function view(User $user, Project $project): bool
     {
-        return view('projects.create');
+        return false;
     }
 
-    public function store(Request $request)
+    /**
+     * Determine whether the user can create models.
+     */
+    public function create(User $user): bool
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-        ]);
-
-        $project = Project::create([
-            ...$validated,
-            'owner_id' => auth()->id(),
-        ]);
-
-        $project->members()->attach(auth()->id());
-
-        return redirect()->route('projects.index')
-            ->with('success', 'Project berhasil dibuat.');
+        return false;
     }
 
-    public function edit(Project $project)
+    /**
+     * Determine whether the user can update the model.
+     */
+    public function update(User $user, Project $project): bool
     {
-        $this->authorize('update', $project);
-        return view('projects.edit', compact('project'));
+        return false;
     }
 
-    public function update(Request $request, Project $project)
+    /**
+     * Determine whether the user can delete the model.
+     */
+    public function delete(User $user, Project $project): bool
     {
-        $this->authorize('update', $project);
-
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'nullable|string',
-        ]);
-
-        $project->update($validated);
-
-        return redirect()->route('projects.index')
-            ->with('success', 'Project berhasil diperbarui.');
+        return false;
     }
 
-    public function destroy(Project $project)
+    /**
+     * Determine whether the user can restore the model.
+     */
+    public function restore(User $user, Project $project): bool
     {
-        $this->authorize('delete', $project);
-        $project->delete();
+        return false;
+    }
 
-        return redirect()->route('projects.index')
-            ->with('success', 'Project berhasil dihapus.');
+    /**
+     * Determine whether the user can permanently delete the model.
+     */
+    public function forceDelete(User $user, Project $project): bool
+    {
+        return false;
     }
 }

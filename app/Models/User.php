@@ -17,9 +17,14 @@ class User extends Authenticatable
         return $this->role === 'admin';
     }
 
+    // Relasi User ke Project
     public function projects()
     {
-        return $this->hasMany(Project::class, 'owner_id');
+        // Menghubungkan ke Project melalui tabel pivot 'project_user'
+        // dan mengambil data tambahan 'role' dari tabel pivot tersebut
+        return $this->belongsToMany(Project::class, 'project_user')
+                    ->withPivot('role')
+                    ->withTimestamps();
     }
 
     public function memberProjects()
