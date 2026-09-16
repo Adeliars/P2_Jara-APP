@@ -13,15 +13,21 @@ Route::get('/', function () {
 });
 
 
+Route::get('/tasks/index', [TaskController::class, 'showAllTasks'])->name('showAllTasks');
+Route::get('/tasks/create', [TaskController::class, 'create'])->name('create-tasks');
+Route::post('/tasks/create', [TaskController::class, 'store'])->name('createTasks');
+Route::get('/tasks/update', [TaskController::class, 'showUpdateForm'])->name('task-update');
+Route::put('/tasks/update', [TaskController::class, 'editTask'])->name('updateTask');
+Route::delete('/tasks/delete', [TaskController::class, 'removeTask'])->name('deleteTask');
+
+
 Route::get('/dashboard', [DashboardController::class, 'index']);
 
 
-Route::get('/index', [TaskController::class, 'showAllTasks']);
-Route::get('/create', [TaskController::class, 'create']);
-Route::post('/create', [TaskController::class, 'store']);
 
 Route::get('/members/add', [ProjectMemberController::class, 'create']);
 
 Route::post('/members', [ProjectMemberController::class, 'store']);
+
 
 
