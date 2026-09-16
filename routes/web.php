@@ -3,9 +3,15 @@
 use App\Http\Controllers\TaskController;
 use Illuminate\Support\Facades\Route;
 
+use App\Http\Controllers\DashboardController;
+
+use App\Http\Controllers\ProjectMemberController;
+
+
 Route::get('/', function () {
     return view('welcome');
 });
+
 
 Route::get('/tasks/index', [TaskController::class, 'showAllTasks'])->name('showAllTasks');
 Route::get('/tasks/create', [TaskController::class, 'create'])->name('create-tasks');
@@ -13,3 +19,15 @@ Route::post('/tasks/create', [TaskController::class, 'store'])->name('createTask
 Route::get('/tasks/update', [TaskController::class, 'showUpdateForm'])->name('task-update');
 Route::put('/tasks/update', [TaskController::class, 'editTask'])->name('updateTask');
 Route::delete('/tasks/delete', [TaskController::class, 'removeTask'])->name('deleteTask');
+
+
+Route::get('/dashboard', [DashboardController::class, 'index']);
+
+
+
+Route::get('/members/add', [ProjectMemberController::class, 'create']);
+
+Route::post('/members', [ProjectMemberController::class, 'store']);
+
+
+

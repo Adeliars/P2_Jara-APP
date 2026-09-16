@@ -9,6 +9,7 @@ class TaskController extends Controller
 {
 
     public function create() {
+
         return view('tasks.create');
     }
 
@@ -23,6 +24,7 @@ class TaskController extends Controller
 
 
         Task::create($validated);
+
 
         return redirect()->route('tasks.index');
     }
@@ -72,7 +74,6 @@ class TaskController extends Controller
 
         return redirect()->back()->with('success', 'task berhasil dihapus');
     }
-
 
 
 
