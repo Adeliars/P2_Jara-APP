@@ -1,66 +1,119 @@
 <?php
 
-namespace App\Policies;
+namespace App\Http\Controllers;
 
 use App\Models\Project;
-use App\Models\User;
-use Illuminate\Auth\Access\Response;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB; // WAJIB DITAMBAHKAN UNTUK TRANSACTION
 
-class ProjectPolicy
+class ProjectController extends Controller
 {
-    /**
-     * Determine whether the user can view any models.
-     */
-    public function viewAny(User $user): bool
+    public function index()
     {
-        return false;
+        $userId = auth()->id();
+
+        $projects = Project::where('owner_id', $userId)
+            ->orWhereHas('members', fn($q) => $q->where('user_id', $userId))
+            ->latest()
+            ->get();
+
+        return view('projects.index', compact('projects'));
     }
 
-    /**
-     * Determine whether the user can view the model.
-     */
-    public function view(User $user, Project $project): bool
+    public function create()
     {
-        return false;
+        return view('projects.create');
     }
 
-    /**
-     * Determine whether the user can create models.
-     */
-    public function create(User $user): bool
+    public function store(Request $request)
     {
-        return false;
+        // SRS-009: Validasi input dan Parameterized Query (Otomatis oleh Eloquent)
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+        ]);
+
+        // SRS-007: Memulai Transaksi Atomik
+        DB::beginTransaction();
+
+        try {
+            // Proses 1: Membuat project
+            $project = Project::create([
+                ...$validated,
+                'owner_id' => auth()->id(),
+            ]);
+
+            // Proses 2: Memasukkan pembuat ke tabel anggota
+            $project->members()->attach(auth()->id());
+
+            // Jika kedua proses berhasil, simpan permanen
+            DB::commit();
+
+            return redirect()->route('projects.index')
+                ->with('success', 'Project berhasil dibuat.');
+
+        } catch (\Exception $e) {
+            // Jika ada yang gagal, batalkan seluruh perubahan
+            DB::rollBack();
+
+            return back()->withInput()->withErrors(['error' => 'Terjadi kesalahan sistem, pembuatan project dibatalkan.']);
+        }
     }
 
-    /**
-     * Determine whether the user can update the model.
-     */
-    public function update(User $user, Project $project): bool
+    public function edit(Project $project)
     {
-        return false;
+        $this->authorize('update', $project);
+        return view('projects.edit', compact('project'));
     }
 
-    /**
-     * Determine whether the user can delete the model.
-     */
-    public function delete(User $user, Project $project): bool
+    public function update(Request $request, Project $project)
     {
-        return false;
+        $this->authorize('update', $project);
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'description' => 'nullable|string',
+        ]);
+
+        $project->update($validated);
+
+        return redirect()->route('projects.index')
+            ->with('success', 'Project berhasil diperbarui.');
     }
 
-    /**
-     * Determine whether the user can restore the model.
-     */
-    public function restore(User $user, Project $project): bool
+    public function destroy(Project $project)
     {
-        return false;
-    }
+        // Memastikan hanya yang berwenang (owner) yang bisa menghapus
+        $this->authorize('delete', $project);
 
-    /**
-     * Determine whether the user can permanently delete the model.
-     */
-    public function forceDelete(User $user, Project $project): bool
-    {
-        return false;
+        // SRS-008: Memulai Transaksi Atomik untuk penghapusan
+        DB::beginTransaction();
+
+        try {
+            // Secara eksplisit menghapus relasi untuk memastikan proses atomik berjalan sempurna
+            // (Meskipun di database sudah ada onDelete('cascade'))
+            $project->members()->detach(); 
+            
+            // Hapus semua task yang terkait dengan project ini
+            // Asumsi: Kamu memiliki relasi tasks() di model Project
+            if (method_exists($project, 'tasks')) {
+                $project->tasks()->delete();
+            }
+
+            // Hapus project utama
+            $project->delete();
+
+            // Simpan perubahan secara permanen
+            DB::commit();
+
+            return redirect()->route('projects.index')
+                ->with('success', 'Project beserta seluruh tugas dan keanggotaannya berhasil dihapus.');
+
+        } catch (\Exception $e) {
+            // Jika penghapusan gagal di tengah jalan, kembalikan data seperti semula
+            DB::rollBack();
+
+            return back()->withErrors(['error' => 'Terjadi kesalahan sistem, penghapusan project dibatalkan.']);
+        }
     }
 }
