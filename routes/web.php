@@ -1,10 +1,22 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CollaborationController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', [DashboardController::class, 'index']);
+
+// Halaman form tambah anggota
+Route::get(
+    '/project/{projectId}/member',
+    [CollaborationController::class, 'index']
+);
+
+
+// Proses tambah anggota
+Route::post(
+    '/project/{projectId}/member',
+    [CollaborationController::class, 'addMember']
+);
